@@ -8,12 +8,6 @@ class UserExtended(models.Model):
     parent = models.ForeignKey('UserExtended', on_delete=models.CASCADE, null=True, blank=True,
                                related_name='user_child')
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_extended')
-    due_date = models.DateField()
-    key_limit = models.IntegerField(default=0)
-    daily_available_keys = models.IntegerField(default=0)
-    sold_min = models.IntegerField(default=0)
-    sold_min_due_date = models.DateField()
-    key_left = models.IntegerField(default=0)
 
     def __str__(self):
         return self.user.username
@@ -33,13 +27,19 @@ class UserExtended(models.Model):
         return r
 
 
-# class Monthly(models.Model):
-#     due_date = models.DateField()
-#     key_limit = models.IntegerField(default=0)
-#     daily_available_keys = models.IntegerField(default=0)
-#     sold_min = models.IntegerField(default=0)
-#     sold_min_due_date = models.DateField()
-#     key_left = models.IntegerField(default=0)
+class UserExtendedSpecification(models.Model):
+    user_extended = models.ForeignKey(UserExtended, on_delete=models.CASCADE,
+                                      related_name="user_extended_specification")
+    date_created = models.DateField()
+    due_date = models.DateField()
+    key_limit = models.IntegerField(default=0)
+    daily_available_keys = models.IntegerField(default=0)
+    sold_min = models.IntegerField(default=0)
+    sold_min_due_date = models.DateField()
+    key_left = models.IntegerField(default=0)
+
+    def __str__(self):
+        return str(self.date_created)
 
 
 class Product(models.Model):

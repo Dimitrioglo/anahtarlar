@@ -1,13 +1,13 @@
 import datetime
 from calendar import monthrange
 
+from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from django.contrib.auth.models import User
-from .models import Product, SoldDateList, UserExtended
+from .models import Product, SoldDateList, UserExtended, UserExtendedSpecification
 from .serializers import UserExtendedSerializer, UserSerializer
 
 
@@ -25,39 +25,44 @@ class SalesInfoDateViewSet(ModelViewSet):
         else:
             user = self.get_queryset().get(user_id=user_id)
 
-        dates = self.all_dates_in_month(int(month))
         user_childs = user.user_child.all()
 
         if not user_childs:
             sold_statistic = []
-            result = self.statistics_by_user(user, dates, str(user.id))
+            result = self.statistics_by_user(user, month, str(user.id))
             sold_statistic.append(result)
+
         else:
             sold_statistic = {
                 "user_name": str(user),
                 "child": []
             }
-            self.statistics_by_user(user, dates, str(user.id))
             for user in user_childs:
                 childs_ids = user.get_all_children(only_ids=True)
                 if not childs_ids:
                     childs_ids = str(user.id)
 
-                result = self.statistics_by_user(user, dates, childs_ids)
+                result = self.statistics_by_user(user, month, childs_ids)
                 sold_statistic['child'].append(result)
         return Response(sold_statistic)
 
-    def statistics_by_user(self, user, dates, date_user):
+    def statistics_by_user(self, user, month, date_user):
+        year, dates = self.all_dates_in_month(int(month))
+        specification_by_date = UserExtendedSpecification.objects.filter(user_extended__user__username=user,
+                                                                         date_created__year__lte=year,
+                                                                         date_created__month__lte=month).last()
+        key_limit = specification_by_date.key_limit
+
         user_statistic = {
             "user": str(user),
-            "key_limit": str(user.key_limit),
+            "key_limit": key_limit,
             "statistics_by_day": []
         }
         obj, total_user_sold = self.statistics_by_date(dates, date_user)
         user_statistic['total_user_sold'] = total_user_sold
         user_statistic['statistics_by_day'].append(obj)
         return user_statistic
-    
+
     @staticmethod
     def statistics_by_date(dates, childs_ids):
         total_user_sold = 0
@@ -78,9 +83,14 @@ class SalesInfoDateViewSet(ModelViewSet):
     @staticmethod
     def all_dates_in_month(month):
         current_date = datetime.datetime.now()
-        days_in_month = monthrange(current_date.year, month)[1]
+        if current_date.month >= month:
+            year = current_date.year
+        else:
+            year = current_date.year - 1
+
+        days_in_month = monthrange(year, month)[1]
         result = [datetime.date(current_date.year, month, day) for day in range(1, days_in_month + 1)]
-        return result
+        return year, result
 
 
 class SalesInfoTypeViewSet(ModelViewSet):
@@ -91,6 +101,7 @@ class SalesInfoTypeViewSet(ModelViewSet):
     def list(self, request, *args, **kwargs):
 
         user_id = request.GET.get('user_id')
+
         if user_id is None:
             user = request.user.user_extended
         else:
@@ -121,15 +132,24 @@ class SalesInfoTypeViewSet(ModelViewSet):
 
     @staticmethod
     def statistic_by_product(products, user, product_user):
+
+        current_date = datetime.datetime.now()
+
+        specification_by_date = UserExtendedSpecification.objects.filter(user_extended__user__username=user,
+                                                                         date_created__year__lte=current_date.year,
+                                                                         date_created__month__lte=current_date.month).last()
+
         user_statistic = {
             "user": str(user),
-            "key_limit": str(user.key_limit),
+            "key_limit": specification_by_date.key_limit,
             "statistics_by_product": []
         }
         total_product_key_sold = 0
         for product in products:
             key_sold_instances_count = SoldDateList.objects.filter(key__product__name=product,
-                                                                   created_by_id__in=product_user).count()
+                                                                   created_by_id__in=product_user,
+                                                                   created_date__year=current_date.year,
+                                                                   created_date__month=current_date.month).count()
             obj = {
                 "product": str(product),
                 "product_key_sold": key_sold_instances_count

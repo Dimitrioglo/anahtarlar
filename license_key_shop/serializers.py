@@ -55,10 +55,4 @@ class UserSerializer(serializers.ModelSerializer):
 class UserExtendedSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserExtended
-        fields = [
-            'parent',
-            'user',
-            'due_date',
-            'key_limit',
-            'alert_key_limit'
-        ]
+        fields = '__all__'
