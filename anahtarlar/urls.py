@@ -24,4 +24,5 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='license_key_shop/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(template_name='license_key_shop/logout.html'), name='logout'),
     path('api/v1/', include('license_key_shop.urls')),
+    path('', include('frontend.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

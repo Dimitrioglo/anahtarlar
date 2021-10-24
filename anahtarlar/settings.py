@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'nested_admin',
     'crispy_forms',
     'license_key_shop',
+    'frontend',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +82,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'anahtarlar',
-        'USER': 'dimitrioglo',
+        'USER': 'funeral',
         'PASSWORD': '451_farengeyt',
         'HOST': 'localhost',
         'PORT': '',
